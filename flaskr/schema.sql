@@ -11,7 +11,6 @@ drop table if exists Order_book;
 --   text tetx not null
 -- );
 
-
 create table Books (isbn char(14) primary key,
                     title varchar(128) not null,
                     authors varchar(256),
@@ -58,3 +57,5 @@ create table Order_book (order_id integer,
                          primary key (order_id),
                          foreign key (login_name) references Customers(login_name),
                          foreign key (isbn) references Books(isbn));
+
+Insert into Books values ('978-1449389673', 'Photoshop Elements 9: The Missing Manual','Barbara Brundage', 'Pogue Press',1992,5,20,'hardcover','keywords none', 'subject here');

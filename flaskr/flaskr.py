@@ -5,7 +5,8 @@ from contextlib import closing
 from flask import Flask,request,session,g,redirect,url_for, abort, render_template,flash
 
 #configuration
-DATABASE = 'C://Users//.nagareboshi.ritsuke//PycharmProjects//borderless//flaskr//tmp//flaskr.db'
+# DATABASE = 'C://Users//.nagareboshi.ritsuke//PycharmProjects//borderless//flaskr//tmp//flaskr.db'
+DATABASE = '/home/jx/borderless/flaskr/tmp/flaskr.db'
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
@@ -38,6 +39,14 @@ def query_db(query, args=(), one=False):
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
+def insert_db (query, args=()):
+    try:
+        db = get_db.execute(query, args)
+        db.commit()
+        return True
+    except:
+        return False
+
 @app.before_request
 def before_request():
     g.db = connect_db()
@@ -50,22 +59,21 @@ def close_connection(exception):
 
 
 ## ROUTES
-@app.route('/', methods=['GET'])
-def show_entries():
+@app.route('/main', methods=['GET'])
+def main():
     error = None
-    # with app.app_context():
-    #     result = query_db('select * from Customers')
-    return render_template('main.html',search=[])
+    return render_template('main.html')
 
-@app.route('/order', methods=['POST'])
-def add_order():
-    if not session.get('logged_in'):
-        abort(401)
-    g.db.execute('insert into entries (title, text) values (?, ?)',
-                 [request.form['title'], request.form['text']])
-    g.db.commit()
-    flash('Order was successfully posted')
-    return redirect(url_for('show_entries'))
+@app.route('/order', methods=['GET','POST'])
+def order():
+    if request.method == 'POST':
+        g.db.execute('insert into entries (title, text) values (?, ?)',
+                     [request.form['title'], request.form['text']])
+        g.db.commit()
+        flash('Order was successfully posted')
+        return redirect(url_for('order'))
+    elif request.method == 'GET':
+        return render_template('order_complete.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -82,15 +90,26 @@ def login():
                 session['logged_in'] = True
                 session ['user'] = user
                 flash('You were logged in')
-                return redirect(url_for('show_entries'))
+                return redirect(url_for('main'))
             else:
                 error = 'Invalid password'
     return render_template('login.html', error=error)
 
-@app.route('/book/<str:isbn>', methods=['GET'])
+@app.route('/book/<isbn>', methods=['GET'])
 def book(isbn):
-    book = query_db('select * from Book where isbn = ?', [isbn], one=True)
+    book = query_db('Select * from Books where isbn = ?', [isbn], one=True)
+    if book is None:
+        error = 'Invalid ISBN'
+        return redirect(url_for('main'))
     return render_template('individual_book.html',book=book)
+
+@app.route('/search', methods=['GET'])
+def search():
+    # book = query_db('Select * from Books where isbn = ?', [isbn], one=True)
+    # if book is None:
+    #     error = 'Invalid ISBN'
+    #     return redirect(url_for('main'))
+    return render_template('search_results.html',entries=entries)
 
 
 @app.route('/logout')
